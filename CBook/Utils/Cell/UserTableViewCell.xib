@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.XIB" version="3.0" toolsVersion="17701" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES">
+    <device id="retina6_1" orientation="portrait" appearance="light"/>
+    <dependencies>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="17703"/>
+        <capability name="Named colors" minToolsVersion="9.0"/>
+        <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
+    </dependencies>
+    <objects>
+        <placeholder placeholderIdentifier="IBFilesOwner" id="-1" userLabel="File's Owner"/>
+        <placeholder placeholderIdentifier="IBFirstResponder" id="-2" customClass="UIResponder"/>
+        <tableViewCell contentMode="scaleToFill" selectionStyle="default" indentationWidth="10" rowHeight="243" id="KGk-i7-Jjw" customClass="UserTableViewCell" customModule="CBook" customModuleProvider="target">
+            <rect key="frame" x="0.0" y="0.0" width="320" height="180"/>
+            <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+            <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" tableViewCell="KGk-i7-Jjw" id="H2p-sc-9uM">
+                <rect key="frame" x="0.0" y="0.0" width="320" height="180"/>
+                <autoresizingMask key="autoresizingMask"/>
+                <subviews>
+                    <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="gio-4r-3Kq">
+                        <rect key="frame" x="20" y="10" width="280" height="160"/>
+                        <subviews>
+                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="MyN-9o-QMq">
+                                <rect key="frame" x="0.0" y="0.0" width="50" height="160"/>
+                                <subviews>
+                                    <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="tree3" translatesAutoresizingMaskIntoConstraints="NO" id="WIK-WH-CG2">
+                                        <rect key="frame" x="5" y="97.5" width="40" height="62.5"/>
+                                        <constraints>
+                                            <constraint firstAttribute="width" secondItem="WIK-WH-CG2" secondAttribute="height" multiplier="16:25" id="Q5G-Mk-roh"/>
+                                        </constraints>
+                                    </imageView>
+                                </subviews>
+                                <color key="backgroundColor" name="AccentColor"/>
+                                <constraints>
+                                    <constraint firstItem="WIK-WH-CG2" firstAttribute="centerX" secondItem="MyN-9o-QMq" secondAttribute="centerX" id="7m7-Nr-lQM"/>
+                                    <constraint firstAttribute="width" constant="50" id="Fgj-Fk-C6w"/>
+                                    <constraint firstItem="WIK-WH-CG2" firstAttribute="leading" secondItem="MyN-9o-QMq" secondAttribute="leading" constant="5" id="M1Q-6Z-ZHb"/>
+                                    <constraint firstAttribute="bottom" secondItem="WIK-WH-CG2" secondAttribute="bottom" id="pCE-NB-C3C"/>
+                                </constraints>
+                            </view>
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Name" textAlignment="natural" lineBreakMode="tailTruncation" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="qaq-Ud-qhj">
+                                <rect key="frame" x="70" y="20" width="190" height="28.5"/>
+                                <fontDescription key="fontDescription" name="MuktaMahee-Bold" family="Mukta Mahee" pointSize="17"/>
+                                <nil key="textColor"/>
+                                <nil key="highlightedColor"/>
+                            </label>
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Phone" textAlignment="natural" lineBreakMode="tailTruncation" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="XPQ-KG-YRO">
+                                <rect key="frame" x="100" y="53.5" width="160" height="25"/>
+                                <fontDescription key="fontDescription" name="MuktaMahee-Light" family="Mukta Mahee" pointSize="15"/>
+                                <nil key="textColor"/>
+                                <nil key="highlightedColor"/>
+                            </label>
+                            <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="iphone" catalog="system" translatesAutoresizingMaskIntoConstraints="NO" id="VoY-yN-Dt3">
+                                <rect key="frame" x="70" y="56" width="20" height="20"/>
+                                <color key="tintColor" name="TourqueseColor"/>
+                                <constraints>
+                                    <constraint firstAttribute="width" constant="20" id="PwV-FD-Q70"/>
+                                    <constraint firstAttribute="width" secondItem="VoY-yN-Dt3" secondAttribute="height" multiplier="1:1" id="n3g-rk-ovb"/>
+                                </constraints>
+                            </imageView>
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Email" textAlignment="natural" lineBreakMode="tailTruncation" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="ZKY-zT-N9h">
+                                <rect key="frame" x="100" y="80.5" width="160" height="25"/>
+                                <fontDescription key="fontDescription" name="MuktaMahee-Light" family="Mukta Mahee" pointSize="15"/>
+                                <nil key="textColor"/>
+                                <nil key="highlightedColor"/>
+                            </label>
+                            <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="mail.fill" catalog="system" translatesAutoresizingMaskIntoConstraints="NO" id="djI-H0-ppv">
+                                <rect key="frame" x="70" y="84" width="20" height="17.5"/>
+                                <color key="tintColor" name="TourqueseColor"/>
+                                <constraints>
+                                    <constraint firstAttribute="width" constant="20" id="zBD-s2-s42"/>
+                                </constraints>
+                            </imageView>
+                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="DZw-OG-yZM">
+                                <rect key="frame" x="141" y="126" width="129" height="24"/>
+                                <constraints>
+                                    <constraint firstAttribute="height" constant="24" id="QWM-uf-bW7"/>
+                                    <constraint firstAttribute="width" secondItem="DZw-OG-yZM" secondAttribute="height" multiplier="43:8" id="WJA-xf-qnF"/>
+                                </constraints>
+                                <fontDescription key="fontDescription" name="MuktaMahee-Regular" family="Mukta Mahee" pointSize="14"/>
+                                <color key="tintColor" name="TourqueseColor"/>
+                                <state key="normal" title="  Ver publicaciones" image="eye.circle.fill" catalog="system">
+                                    <color key="titleColor" name="TourqueseColor"/>
+                                </state>
+                                <connections>
+                                    <action selector="seePosts:" destination="KGk-i7-Jjw" eventType="touchUpInside" id="XDz-UP-gDp"/>
+                                </connections>
+                            </button>
+                        </subviews>
+                        <color key="backgroundColor" name="GrayColor"/>
+                        <constraints>
+                            <constraint firstItem="XPQ-KG-YRO" firstAttribute="trailing" secondItem="qaq-Ud-qhj" secondAttribute="trailing" id="BuD-PU-cCW"/>
+                            <constraint firstItem="DZw-OG-yZM" firstAttribute="top" secondItem="ZKY-zT-N9h" secondAttribute="bottom" constant="20.5" id="C8l-Ef-r0F"/>
+                            <constraint firstItem="qaq-Ud-qhj" firstAttribute="top" secondItem="gio-4r-3Kq" secondAttribute="top" constant="20" id="F0C-dR-gli"/>
+                            <constraint firstItem="qaq-Ud-qhj" firstAttribute="leading" secondItem="MyN-9o-QMq" secondAttribute="trailing" constant="20" id="Hqb-qi-7ea"/>
+                            <constraint firstItem="ZKY-zT-N9h" firstAttribute="leading" secondItem="djI-H0-ppv" secondAttribute="trailing" constant="10" id="MmW-dQ-Cbm"/>
+                            <constraint firstItem="ZKY-zT-N9h" firstAttribute="trailing" secondItem="XPQ-KG-YRO" secondAttribute="trailing" id="OFg-mo-d6h"/>
+                            <constraint firstAttribute="trailing" secondItem="DZw-OG-yZM" secondAttribute="trailing" constant="10" id="PlA-M6-aSh"/>
+                            <constraint firstItem="XPQ-KG-YRO" firstAttribute="top" secondItem="qaq-Ud-qhj" secondAttribute="bottom" constant="5" id="Rox-bx-0UN"/>
+                            <constraint firstItem="XPQ-KG-YRO" firstAttribute="centerY" secondItem="VoY-yN-Dt3" secondAttribute="centerY" id="Seo-lU-gfW"/>
+                            <constraint firstItem="MyN-9o-QMq" firstAttribute="top" secondItem="gio-4r-3Kq" secondAttribute="top" id="UqB-4G-RUi"/>
+                            <constraint firstAttribute="bottom" secondItem="DZw-OG-yZM" secondAttribute="bottom" constant="10" id="bh8-ps-9hy"/>
+                            <constraint firstItem="XPQ-KG-YRO" firstAttribute="leading" secondItem="VoY-yN-Dt3" secondAttribute="trailing" constant="10" id="fpy-z7-2sp"/>
+                            <constraint firstItem="MyN-9o-QMq" firstAttribute="centerY" secondItem="gio-4r-3Kq" secondAttribute="centerY" id="mDe-fk-bTc"/>
+                            <constraint firstItem="djI-H0-ppv" firstAttribute="width" secondItem="djI-H0-ppv" secondAttribute="height" multiplier="1:1" id="mu1-MO-NKf"/>
+                            <constraint firstAttribute="trailing" secondItem="qaq-Ud-qhj" secondAttribute="trailing" constant="20" id="nvA-4t-wo2"/>
+                            <constraint firstItem="ZKY-zT-N9h" firstAttribute="centerY" secondItem="djI-H0-ppv" secondAttribute="centerY" id="p1X-5c-d4q"/>
+                            <constraint firstItem="VoY-yN-Dt3" firstAttribute="leading" secondItem="qaq-Ud-qhj" secondAttribute="leading" id="sPg-My-0hz"/>
+                            <constraint firstItem="djI-H0-ppv" firstAttribute="leading" secondItem="VoY-yN-Dt3" secondAttribute="leading" id="suj-9s-rWW"/>
+                            <constraint firstItem="ZKY-zT-N9h" firstAttribute="top" secondItem="XPQ-KG-YRO" secondAttribute="bottom" constant="2" id="ukS-ot-rhp"/>
+                            <constraint firstItem="MyN-9o-QMq" firstAttribute="leading" secondItem="gio-4r-3Kq" secondAttribute="leading" id="xbG-Wo-hjl"/>
+                        </constraints>
+                    </view>
+                </subviews>
+                <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                <constraints>
+                    <constraint firstItem="gio-4r-3Kq" firstAttribute="top" secondItem="H2p-sc-9uM" secondAttribute="top" constant="10" id="J3t-Tv-VF4"/>
+                    <constraint firstItem="gio-4r-3Kq" firstAttribute="leading" secondItem="H2p-sc-9uM" secondAttribute="leading" constant="20" id="QVu-Ye-HEl"/>
+                    <constraint firstItem="gio-4r-3Kq" firstAttribute="centerY" secondItem="H2p-sc-9uM" secondAttribute="centerY" id="WeB-SI-cdw"/>
+                    <constraint firstItem="gio-4r-3Kq" firstAttribute="centerX" secondItem="H2p-sc-9uM" secondAttribute="centerX" id="w96-Tc-GpX"/>
+                </constraints>
+            </tableViewCellContentView>
+            <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+            <connections>
+                <outlet property="box" destination="gio-4r-3Kq" id="h4T-76-3iE"/>
+                <outlet property="emailLabel" destination="ZKY-zT-N9h" id="e7B-gs-fYF"/>
+                <outlet property="greenBox" destination="MyN-9o-QMq" id="34X-g4-LPc"/>
+                <outlet property="nameLabel" destination="qaq-Ud-qhj" id="8Xd-63-jlv"/>
+                <outlet property="phoneLabel" destination="XPQ-KG-YRO" id="kHW-5Q-HeH"/>
+                <outlet property="tree" destination="WIK-WH-CG2" id="sup-Kd-iwG"/>
+            </connections>
+            <point key="canvasLocation" x="140.57971014492756" y="186.83035714285714"/>
+        </tableViewCell>
+    </objects>
+    <resources>
+        <image name="eye.circle.fill" catalog="system" width="128" height="121"/>
+        <image name="iphone" catalog="system" width="108" height="128"/>
+        <image name="mail.fill" catalog="system" width="128" height="93"/>
+        <image name="tree3" width="345" height="500"/>
+        <namedColor name="AccentColor">
+            <color red="0.7803921568627451" green="0.99215686274509807" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+        </namedColor>
+        <namedColor name="GrayColor">
+            <color red="0.94509803921568625" green="0.96078431372549022" blue="0.96078431372549022" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+        </namedColor>
+        <namedColor name="TourqueseColor">
+            <color red="0.011764705882352941" green="0.59607843137254901" blue="0.61960784313725492" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+        </namedColor>
+    </resources>
+</document>
