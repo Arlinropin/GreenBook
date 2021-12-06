@@ -35,7 +35,13 @@ public protocol DatabaseWriter: DatabaseReader {
     /// Eventual concurrent reads are guaranteed to not see any partial updates
     /// of the database until the transaction has completed.
     ///
-    /// This method is *not* reentrant.
+    /// It is a programmer error to call this method from another database
+    /// access method:
+    ///
+    ///     try writer.write { db in
+    ///         // Raises a fatal error
+    ///         try writer.write { ... )
+    ///     }
     ///
     /// - parameter updates: The updates to the database.
     /// - throws: The error thrown by the updates, or by the
@@ -51,7 +57,13 @@ public protocol DatabaseWriter: DatabaseReader {
     /// Eventual concurrent reads may see partial updates unless you wrap them
     /// in a transaction.
     ///
-    /// This method is *not* reentrant.
+    /// It is a programmer error to call this method from another database
+    /// access method:
+    ///
+    ///     try writer.write { db in
+    ///         // Raises a fatal error
+    ///         try writer.writeWithoutTransaction { ... )
+    ///     }
     ///
     /// - parameter updates: The updates to the database.
     /// - throws: The error thrown by the updates.
@@ -64,7 +76,13 @@ public protocol DatabaseWriter: DatabaseReader {
     /// until all pending writes and reads are completed. They postpone all
     /// other writes and reads until they are completed.
     ///
-    /// This method is *not* reentrant.
+    /// It is a programmer error to call this method from another database
+    /// access method:
+    ///
+    ///     try writer.write { db in
+    ///         // Raises a fatal error
+    ///         try writer.barrierWriteWithoutTransaction { ... )
+    ///     }
     ///
     /// - parameter updates: The updates to the database.
     /// - throws: The error thrown by the updates.
@@ -164,7 +182,7 @@ public protocol DatabaseWriter: DatabaseReader {
     ///         // Guaranteed to be zero
     ///         let count = try future.wait()
     ///     }
-    func concurrentRead<T>(_ block: @escaping (Database) throws -> T) -> DatabaseFuture<T>
+    func concurrentRead<T>(_ value: @escaping (Database) throws -> T) -> DatabaseFuture<T>
     
     // Exposed for RxGRDB and GRBCombine. Naming is not stabilized.
     /// [**Experimental**](http://github.com/groue/GRDB.swift#what-are-experimental-features)
@@ -202,28 +220,11 @@ public protocol DatabaseWriter: DatabaseReader {
     ///
     /// - parameter block: A block that accesses the database.
     /// :nodoc:
-    func spawnConcurrentRead(_ block: @escaping (Result<Database, Error>) -> Void)
+    func spawnConcurrentRead(_ value: @escaping (Result<Database, Error>) -> Void)
 }
 
 extension DatabaseWriter {
     
-    /// Synchronously executes database updates in a protected dispatch queue,
-    /// wrapped inside a transaction, and returns the result.
-    ///
-    /// If the updates throw an error, the transaction is rollbacked and the
-    /// error is rethrown.
-    ///
-    /// Eventual concurrent database updates are postponed until the transaction
-    /// has completed.
-    ///
-    /// Eventual concurrent reads are guaranteed to not see any partial updates
-    /// of the database until the transaction has completed.
-    ///
-    /// This method is *not* reentrant.
-    ///
-    /// - parameter updates: The updates to the database.
-    /// - throws: The error thrown by the updates, or by the
-    ///   wrapping transaction.
     public func write<T>(_ updates: (Database) throws -> T) throws -> T {
         try writeWithoutTransaction { db in
             var result: T?
@@ -303,11 +304,8 @@ extension DatabaseWriter {
     // MARK: - Erasing the content of the database
     
     /// Erases the content of the database.
-    ///
-    /// - precondition: database is not accessed concurrently during the
-    ///   execution of this method.
     public func erase() throws {
-        try writeWithoutTransaction { try $0.erase() }
+        try barrierWriteWithoutTransaction { try $0.erase() }
     }
     
     // MARK: - Claiming Disk Space
@@ -315,10 +313,49 @@ extension DatabaseWriter {
     /// Rebuilds the database file, repacking it into a minimal amount of
     /// disk space.
     ///
-    /// See https://www.sqlite.org/lang_vacuum.html for more information.
+    /// See <https://www.sqlite.org/lang_vacuum.html> for more information.
     public func vacuum() throws {
         try writeWithoutTransaction { try $0.execute(sql: "VACUUM") }
     }
+    
+    // VACUUM INTO was introduced in SQLite 3.27.0:
+    // https://www.sqlite.org/releaselog/3_27_0.html
+    //
+    // Old versions of SQLCipher won't have it, but I don't know how to perform
+    // availability checks that depend on the version of the SQLCipher CocoaPod
+    // chosen by the application. So let's just have the method fail at runtime.
+    //
+    // This method is declared on DatabaseWriter instead of DatabaseReader,
+    // so that it is not available on DatabaseSnaphot. VACUUM INTO is not
+    // available inside the transaction that is kept open by DatabaseSnaphot.
+    #if GRDBCUSTOMSQLITE || GRDBCIPHER
+    /// Creates a new database file at the specified path with a minimum
+    /// amount of disk space.
+    ///
+    /// Databases encrypted with SQLCipher are copied with the same password
+    /// and configuration as the original database.
+    ///
+    /// See <https://www.sqlite.org/lang_vacuum.html#vacuuminto> for more information.
+    ///
+    /// - Parameter filePath: file path for new database
+    public func vacuum(into filePath: String) throws {
+        try writeWithoutTransaction {
+            try $0.execute(sql: "VACUUM INTO ?", arguments: [filePath])
+        }
+    }
+    #else
+    /// Creates a new database file at the specified path with a minimum
+    /// amount of disk space.
+    /// See <https://www.sqlite.org/lang_vacuum.html#vacuuminto> for more information.
+    ///
+    /// - Parameter filePath: file path for new database
+    @available(OSX 10.16, iOS 14, tvOS 14, watchOS 7, *)
+    public func vacuum(into filePath: String) throws {
+        try writeWithoutTransaction {
+            try $0.execute(sql: "VACUUM INTO ?", arguments: [filePath])
+        }
+    }
+    #endif
     
     // MARK: - Database Observation
     
@@ -578,6 +615,10 @@ public final class AnyDatabaseWriter: DatabaseWriter {
         base.configuration
     }
     
+    public func close() throws {
+        try base.close()
+    }
+    
     // MARK: - Interrupting Database Operations
     
     public func interrupt() {
@@ -586,34 +627,34 @@ public final class AnyDatabaseWriter: DatabaseWriter {
     
     // MARK: - Reading from Database
     
-    public func read<T>(_ block: (Database) throws -> T) throws -> T {
-        try base.read(block)
+    public func read<T>(_ value: (Database) throws -> T) throws -> T {
+        try base.read(value)
     }
     
-    public func asyncRead(_ block: @escaping (Result<Database, Error>) -> Void) {
-        base.asyncRead(block)
-    }
-    
-    /// :nodoc:
-    public func _weakAsyncRead(_ block: @escaping (Result<Database, Error>?) -> Void) {
-        base._weakAsyncRead(block)
-    }
-    
-    public func unsafeRead<T>(_ block: (Database) throws -> T) throws -> T {
-        try base.unsafeRead(block)
-    }
-    
-    public func unsafeReentrantRead<T>(_ block: (Database) throws -> T) throws -> T {
-        try base.unsafeReentrantRead(block)
-    }
-    
-    public func concurrentRead<T>(_ block: @escaping (Database) throws -> T) -> DatabaseFuture<T> {
-        base.concurrentRead(block)
+    public func asyncRead(_ value: @escaping (Result<Database, Error>) -> Void) {
+        base.asyncRead(value)
     }
     
     /// :nodoc:
-    public func spawnConcurrentRead(_ block: @escaping (Result<Database, Error>) -> Void) {
-        base.spawnConcurrentRead(block)
+    public func _weakAsyncRead(_ value: @escaping (Result<Database, Error>?) -> Void) {
+        base._weakAsyncRead(value)
+    }
+    
+    public func unsafeRead<T>(_ value: (Database) throws -> T) throws -> T {
+        try base.unsafeRead(value)
+    }
+    
+    public func unsafeReentrantRead<T>(_ value: (Database) throws -> T) throws -> T {
+        try base.unsafeReentrantRead(value)
+    }
+    
+    public func concurrentRead<T>(_ value: @escaping (Database) throws -> T) -> DatabaseFuture<T> {
+        base.concurrentRead(value)
+    }
+    
+    /// :nodoc:
+    public func spawnConcurrentRead(_ value: @escaping (Result<Database, Error>) -> Void) {
+        base.spawnConcurrentRead(value)
     }
     
     // MARK: - Writing in Database

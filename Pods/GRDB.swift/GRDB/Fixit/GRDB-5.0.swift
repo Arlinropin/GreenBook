@@ -15,15 +15,12 @@ extension AnyFetchRequest {
     { preconditionFailure() }
     
     @available(*, unavailable, message: "Define your own FetchRequest type instead.")
-    public init(_ prepare: @escaping (Database, _ singleResult: Bool) throws -> (SelectStatement, RowAdapter?))
+    public init(_ prepare: @escaping (Database, _ singleResult: Bool) throws -> (Statement, RowAdapter?))
     { preconditionFailure() }
 }
 
 @available(*, unavailable, message: "Custom reducers are no longer supported. See the \"Migrating From GRDB 4 to GRDB 5\" guide.")
 public struct AnyValueReducer<Fetched, Value>: ValueReducer {
-    public var _isSelectedRegionDeterministic: Bool
-    { preconditionFailure() }
-    
     public init(fetch: @escaping (Database) throws -> Fetched, value: @escaping (Fetched) -> Value?)
     { preconditionFailure() }
     
@@ -129,7 +126,7 @@ extension DatabaseReader {
 
 extension FetchRequest {
     @available(*, unavailable, message: "Use makePreparedRequest(_:forSingleResult:) instead.")
-    func prepare(_ db: Database, forSingleResult singleResult: Bool) throws -> (SelectStatement, RowAdapter?)
+    func prepare(_ db: Database, forSingleResult singleResult: Bool) throws -> (Statement, RowAdapter?)
     { preconditionFailure() }
     
     @available(*, unavailable, message: "Use ValueObservation.tracking(request.fetchCount) instead")
@@ -559,9 +556,6 @@ extension ValueObservation where Reducer.Value: Equatable {
 extension ValueReducers {
     @available(*, unavailable)
     public enum Unavailable<T>: ValueReducer {
-        public var _isSelectedRegionDeterministic: Bool
-        { preconditionFailure() }
-        
         public func _fetch(_ db: Database) throws -> Never
         { preconditionFailure() }
         

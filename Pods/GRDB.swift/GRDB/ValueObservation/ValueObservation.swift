@@ -22,26 +22,58 @@ import Foundation
 public struct ValueObservation<Reducer: ValueReducer> {
     var events = ValueObservationEvents()
     
-    /// The reducer is created when observation starts, and is triggered upon
-    /// each database change.
-    var makeReducer: () -> Reducer
-    
     /// Default is false. Set this property to true when the observation
     /// requires write access in order to fetch fresh values. Fetches are then
     /// wrapped inside a savepoint.
     ///
     /// Don't set this flag to true unless you really need it. A read/write
     /// observation is less efficient than a read-only observation.
-    public var requiresWriteAccess: Bool = false
+    public var requiresWriteAccess = false
+    
+    var trackingMode: ValueObservationTrackingMode
+    
+    /// The reducer is created when observation starts, and is triggered upon
+    /// each database change.
+    var makeReducer: () -> Reducer
     
     /// Returns a ValueObservation with a transformed reducer.
     func mapReducer<R>(_ transform: @escaping (Reducer) -> R) -> ValueObservation<R> {
         let makeReducer = self.makeReducer
         return ValueObservation<R>(
             events: events,
-            makeReducer: { transform(makeReducer()) },
-            requiresWriteAccess: requiresWriteAccess)
+            requiresWriteAccess: requiresWriteAccess,
+            trackingMode: trackingMode,
+            makeReducer: { transform(makeReducer()) })
     }
+}
+
+enum ValueObservationTrackingMode {
+    /// The tracked region is constant and explicit.
+    ///
+    /// Use case:
+    ///
+    ///     // Tracked Region is always the full player table
+    ///     ValueObservation.trackingConstantRegion(Player.all()) { db in ... }
+    case constantRegion([DatabaseRegionConvertible])
+    
+    /// The tracked region is constant and inferred from the fetched values.
+    ///
+    /// Use case:
+    ///
+    ///     // Tracked Region is always the full player table
+    ///     ValueObservation.trackingConstantRegion { db in Player.fetchAll(db) }
+    case constantRegionRecordedFromSelection
+    
+    /// The tracked region is not constant, and inferred from the fetched values.
+    ///
+    /// Use case:
+    ///
+    ///     // Tracked Region is the one row of the table, and it changes on
+    ///     // each fetch.
+    ///     ValueObservation.tracking { db in
+    ///         try Player.fetchOne(db, id: Int.random(in: 1.1000))
+    ///     }
+    case nonConstantRegionRecordedFromSelection
 }
 
 struct ValueObservationEvents: Refinable {
@@ -51,6 +83,11 @@ struct ValueObservationEvents: Refinable {
     var didFail: ((Error) -> Void)?
     var didCancel: (() -> Void)?
 }
+
+typealias ValueObservationStart<T> = (
+    _ onError: @escaping (Error) -> Void,
+    _ onChange: @escaping (T) -> Void)
+-> DatabaseCancellable
 
 extension ValueObservation: Refinable {
     
@@ -90,6 +127,9 @@ extension ValueObservation: Refinable {
     ///         })
     ///     // <- here "fresh players" is already printed.
     ///
+    /// Note that the `.immediate` scheduler requires that the observation is
+    /// subscribed from the main thread. It raises a fatal error otherwise.
+    ///
     /// - parameter reader: A DatabaseReader.
     /// - parameter scheduler: A Scheduler. By default, fresh values are
     ///   dispatched asynchronously on the main queue.
@@ -103,8 +143,8 @@ extension ValueObservation: Refinable {
         onError: @escaping (Error) -> Void,
         onChange: @escaping (Reducer.Value) -> Void) -> DatabaseCancellable
     {
-        let observation = map(\.events) { events in
-            events.map(\.didFail) { concat($0, onError) }
+        let observation = self.with {
+            $0.events.didFail = concat($0.events.didFail, onError)
         }
         observation.events.willStart?()
         return reader._add(
@@ -157,14 +197,13 @@ extension ValueObservation: Refinable {
                     // the type of the value may change with the `map` operator.
                     didReceiveValue: didReceiveValue ?? { _ in })
             })
-            .map(\.events, { events in
-                events
-                    .map(\.willStart) { concat($0, willStart) }
-                    .map(\.willTrackRegion) { concat($0, willTrackRegion) }
-                    .map(\.databaseDidChange) { concat($0, databaseDidChange) }
-                    .map(\.didFail) { concat($0, didFail) }
-                    .map(\.didCancel) { concat($0, didCancel) }
-            })
+            .with {
+                $0.events.willStart = concat($0.events.willStart, willStart)
+                $0.events.willTrackRegion = concat($0.events.willTrackRegion, willTrackRegion)
+                $0.events.databaseDidChange = concat($0.events.databaseDidChange, databaseDidChange)
+                $0.events.didFail = concat($0.events.didFail, didFail)
+                $0.events.didCancel = concat($0.events.didCancel, didCancel)
+            }
     }
     
     /// Prints log messages for all ValueObservation events.
@@ -173,16 +212,31 @@ extension ValueObservation: Refinable {
         to stream: TextOutputStream? = nil)
     -> ValueObservation<ValueReducers.Trace<Reducer>>
     {
+        let lock = NSLock()
         let prefix = prefix.isEmpty ? "" : "\(prefix): "
         var stream = stream ?? PrintOutputStream()
         return handleEvents(
-            willStart: { stream.write("\(prefix)start") },
-            willFetch: { stream.write("\(prefix)fetch") },
-            willTrackRegion: { stream.write("\(prefix)tracked region: \($0)") },
-            databaseDidChange: { stream.write("\(prefix)database did change") },
-            didReceiveValue: { stream.write("\(prefix)value: \($0)") },
-            didFail: { stream.write("\(prefix)failure: \($0)") },
-            didCancel: { stream.write("\(prefix)cancel") })
+            willStart: {
+                lock.lock(); defer { lock.unlock() }
+                stream.write("\(prefix)start") },
+            willFetch: {
+                lock.lock(); defer { lock.unlock() }
+                stream.write("\(prefix)fetch") },
+            willTrackRegion: {
+                lock.lock(); defer { lock.unlock() }
+                stream.write("\(prefix)tracked region: \($0)") },
+            databaseDidChange: {
+                lock.lock(); defer { lock.unlock() }
+                stream.write("\(prefix)database did change") },
+            didReceiveValue: {
+                lock.lock(); defer { lock.unlock() }
+                stream.write("\(prefix)value: \($0)") },
+            didFail: {
+                lock.lock(); defer { lock.unlock() }
+                stream.write("\(prefix)failure: \($0)") },
+            didCancel: {
+                lock.lock(); defer { lock.unlock() }
+                stream.write("\(prefix)cancel") })
     }
     
     // MARK: - Fetching Values
@@ -190,7 +244,7 @@ extension ValueObservation: Refinable {
     /// Returns the value.
     func fetchValue(_ db: Database) throws -> Reducer.Value {
         var reducer = makeReducer()
-        guard let value = try reducer.fetchAndReduce(db, requiringWriteAccess: requiresWriteAccess) else {
+        guard let value = try reducer.fetchAndReduce(db) else {
             fatalError("Contract broken: reducer has no initial value")
         }
         return value
@@ -247,39 +301,30 @@ extension ValueObservation {
         scheduling scheduler: ValueObservationScheduler = .async(onQueue: .main))
     -> DatabasePublishers.Value<Reducer.Value>
     {
-        return DatabasePublishers.Value(self, in: reader, scheduling: scheduler)
+        DatabasePublishers.Value { [weak reader] (onError, onChange) in
+            guard let reader = reader else {
+                return AnyDatabaseCancellable(cancel: { })
+            }
+            return self.start(
+                in: reader,
+                scheduling: scheduler,
+                onError: onError,
+                onChange: onChange)
+        }
     }
 }
 
 @available(OSX 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension DatabasePublishers {
-    fileprivate typealias Start<T> = (
-        _ onError: @escaping (Error) -> Void,
-        _ onChange: @escaping (T) -> Void) -> DatabaseCancellable
-    
     /// A publisher that tracks changes in the database.
     ///
     /// See `ValueObservation.publisher(in:scheduling:)`.
     public struct Value<Output>: Publisher {
         public typealias Failure = Error
-        private let start: Start<Output>
+        private let start: ValueObservationStart<Output>
         
-        init<Reducer>(
-            _ observation: ValueObservation<Reducer>,
-            in reader: DatabaseReader,
-            scheduling scheduler: ValueObservationScheduler)
-        where Reducer.Value == Output
-        {
-            start = { [weak reader] (onError, onChange) in
-                guard let reader = reader else {
-                    return AnyDatabaseCancellable(cancel: { })
-                }
-                return observation.start(
-                    in: reader,
-                    scheduling: scheduler,
-                    onError: onError,
-                    onChange: onChange)
-            }
+        init(start: @escaping ValueObservationStart<Output>) {
+            self.start = start
         }
         
         public func receive<S>(subscriber: S) where S: Subscriber, Failure == S.Failure, Output == S.Input {
@@ -295,7 +340,7 @@ extension DatabasePublishers {
     {
         private struct WaitingForDemand {
             let downstream: Downstream
-            let start: Start<Downstream.Input>
+            let start: ValueObservationStart<Downstream.Input>
         }
         
         private struct Observing {
@@ -322,7 +367,7 @@ extension DatabasePublishers {
         private var lock = NSRecursiveLock() // Allow re-entrancy
         
         init(
-            start: @escaping Start<Downstream.Input>,
+            start: @escaping ValueObservationStart<Downstream.Input>,
             downstream: Downstream)
         {
             state = .waitingForDemand(WaitingForDemand(
@@ -483,7 +528,101 @@ extension ValueObservation where Reducer == ValueReducers.Auto {
         _ fetch: @escaping (Database) throws -> Value)
     -> ValueObservation<ValueReducers.Fetch<Value>>
     {
-        .init(makeReducer: { .init(isSelectedRegionDeterministic: true, fetch: fetch) })
+        .init(
+            trackingMode: .constantRegionRecordedFromSelection,
+            makeReducer: { ValueReducers.Fetch(fetch: fetch) })
+    }
+    
+    /// Creates a `ValueObservation` that notifies the values returned by the
+    /// `fetch` function whenever a database transaction has an impact on the
+    /// given regions.
+    ///
+    /// The tracked region *is not* automatically inferred from the requests
+    /// performed in the `fetch` function.
+    ///
+    /// For example:
+    ///
+    ///     // Tracks the full database
+    ///     let observation = ValueObservation.tracking
+    ///         region: .fullDatabase,
+    ///         fetch: { db in ... })
+    ///
+    ///     // Tracks the full 'player' table
+    ///     let observation = ValueObservation.tracking
+    ///         region: Player.all(),
+    ///         fetch: { db in ... })
+    ///
+    ///     // Tracks the row with id 42 in the 'player' table
+    ///     let observation = ValueObservation.tracking
+    ///         region: Player.filter(id: 42),
+    ///         fetch: { db in ... })
+    ///
+    ///     // Tracks the 'score' column in the 'player' table
+    ///     let observation = ValueObservation.tracking
+    ///         region: Player.select(max(Column("score")),
+    ///         fetch: { db in ... })
+    ///
+    ///     // Tracks both the 'player' and 'team' tables
+    ///     let observation = ValueObservation.tracking
+    ///         region: Player.all(), Team.all(),
+    ///         fetch: { db in ... })
+    ///
+    /// - parameter region: A list of observed regions.
+    /// - parameter fetch: A function that fetches the observed value from
+    ///   the database.
+    public static func tracking<Value>(
+        region: DatabaseRegionConvertible...,
+        fetch: @escaping (Database) throws -> Value)
+    -> ValueObservation<ValueReducers.Fetch<Value>>
+    {
+        tracking(regions: region, fetch: fetch)
+    }
+    
+    /// Creates a `ValueObservation` that notifies the values returned by the
+    /// `fetch` function whenever a database transaction has an impact on the
+    /// given regions.
+    ///
+    /// The tracked region *is not* automatically inferred from the requests
+    /// performed in the `fetch` function.
+    ///
+    /// For example:
+    ///
+    ///     // Tracks the full database
+    ///     let observation = ValueObservation.tracking
+    ///         regions: [.fullDatabase],
+    ///         fetch: { db in ... })
+    ///
+    ///     // Tracks the full 'player' table
+    ///     let observation = ValueObservation.tracking
+    ///         regions: [Player.all()],
+    ///         fetch: { db in ... })
+    ///
+    ///     // Tracks the row with id 42 in the 'player' table
+    ///     let observation = ValueObservation.tracking
+    ///         regions: [Player.filter(id: 42)],
+    ///         fetch: { db in ... })
+    ///
+    ///     // Tracks the 'score' column in the 'player' table
+    ///     let observation = ValueObservation.tracking
+    ///         regions: [Player.select(max(Column("score"))],
+    ///         fetch: { db in ... })
+    ///
+    ///     // Tracks both the 'player' and 'team' tables
+    ///     let observation = ValueObservation.tracking
+    ///         regions: [Player.all(), Team.all()],
+    ///         fetch: { db in ... })
+    ///
+    /// - parameter regions: A list of observed regions.
+    /// - parameter fetch: A function that fetches the observed value from
+    ///   the database.
+    public static func tracking<Value>(
+        regions: [DatabaseRegionConvertible],
+        fetch: @escaping (Database) throws -> Value)
+    -> ValueObservation<ValueReducers.Fetch<Value>>
+    {
+        .init(
+            trackingMode: .constantRegion(regions),
+            makeReducer: { ValueReducers.Fetch(fetch: fetch) })
     }
     
     /// Creates a `ValueObservation` that notifies the values returned by the
@@ -508,7 +647,9 @@ extension ValueObservation where Reducer == ValueReducers.Auto {
         _ fetch: @escaping (Database) throws -> Value)
     -> ValueObservation<ValueReducers.Fetch<Value>>
     {
-        .init(makeReducer: { .init(isSelectedRegionDeterministic: false, fetch: fetch) })
+        .init(
+            trackingMode: .nonConstantRegionRecordedFromSelection,
+            makeReducer: { ValueReducers.Fetch(fetch: fetch) })
     }
     
     /// Creates a `ValueObservation` that notifies the values returned by the
