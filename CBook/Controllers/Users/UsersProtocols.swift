@@ -9,18 +9,18 @@
 import Foundation
 import UIKit
 
-protocol UsersViewProtocol: class {
+protocol UsersViewProtocol: AnyObject {
     // PRESENTER -> VIEW
     var presenter: UsersPresenterProtocol? { get set }
 }
 
-protocol UsersWireFrameProtocol: class {
+protocol UsersWireFrameProtocol: AnyObject {
     // PRESENTER -> WIREFRAME
     static func createUsersModule() -> UIViewController
     func showPostsView(user: User, from view: UsersViewProtocol)
 }
 
-protocol UsersPresenterProtocol: class {
+protocol UsersPresenterProtocol: AnyObject {
     // VIEW -> PRESENTER
     var view: UsersViewProtocol? { get set }
     var interactor: UsersInteractorInputProtocol? { get set }
@@ -31,11 +31,11 @@ protocol UsersPresenterProtocol: class {
     func showPosts(user: User)
 }
 
-protocol UsersInteractorOutputProtocol: class {
+protocol UsersInteractorOutputProtocol: AnyObject {
 // INTERACTOR -> PRESENTER
 }
 
-protocol UsersInteractorInputProtocol: class {
+protocol UsersInteractorInputProtocol: AnyObject {
     // PRESENTER -> INTERACTOR
     var presenter: UsersInteractorOutputProtocol? { get set }
     func getUsers(callbackSuccess: @escaping (Any)->Void, callbackFailure: @escaping (Errors)->Void)

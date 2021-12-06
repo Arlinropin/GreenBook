@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Scheme
-   LastUpgradeVersion = "1240"
+   LastUpgradeVersion = "1300"
    version = "1.3">
    <BuildAction
       parallelizeBuildables = "YES"
@@ -15,7 +15,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "0A86C228CFCBC35A1FD284274ED0930F"
-               BuildableName = "GRDB.swift.framework"
+               BuildableName = "GRDB.framework"
                BlueprintName = "GRDB.swift"
                ReferencedContainer = "container:Pods.xcodeproj">
             </BuildableReference>
